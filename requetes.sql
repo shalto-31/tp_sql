@@ -192,3 +192,161 @@ SELECT rang,
        score_moyen - ROUND(AVG(score_moyen) OVER (PARTITION BY rang), 0) AS ecart
 FROM score_par_joueur
 ORDER BY ecart DESC;
+
+
+
+-- =========================================================
+-- PALIER 3 : CTE ET RÉCURSIVITÉ
+-- =========================================================
+
+-- ---------------------------------------------------------
+-- Q8 : Quels joueurs ont un score total supérieur à la moyenne des joueurs ?
+-- Fonction : 2 CTE enchaînées
+-- Principe : la première CTE calcule le score total de chaque joueur. La
+--            deuxième s'appuie sur la première pour calculer la moyenne de ces
+--            totaux. Le SELECT final garde les joueurs au-dessus de cette moyenne.
+-- ---------------------------------------------------------
+WITH score_par_joueur AS (
+    SELECT j.id,
+           j.nom,
+           SUM(e.score) AS score_total
+    FROM joueur AS j
+    JOIN jeux AS e ON e.joueur_id = j.id
+    GROUP BY j.id, j.nom
+),
+moyenne_generale AS (
+    SELECT AVG(score_total) AS moyenne
+    FROM score_par_joueur
+)
+SELECT s.nom,
+       s.score_total,
+       ROUND(m.moyenne, 0) AS moyenne_des_joueurs,
+       s.score_total - ROUND(m.moyenne, 0) AS ecart
+FROM score_par_joueur AS s
+CROSS JOIN moyenne_generale AS m
+WHERE s.score_total > m.moyenne
+ORDER BY s.score_total DESC;
+
+
+-- ---------------------------------------------------------
+-- Q9 : Parmi les gros acheteurs (dépense totale supérieure à la moyenne),
+--      lesquels jouent le plus longtemps en moyenne par partie ?
+-- Fonction : 3 CTE enchaînées
+-- Principe : la première CTE calcule la dépense totale par joueur. La deuxième
+--            relit la première et garde ceux qui dépensent plus que la moyenne.
+--            La troisième calcule la durée moyenne de jeu par joueur. Le SELECT
+--            final relie la deuxième et la troisième.
+-- ---------------------------------------------------------
+WITH depense_par_joueur AS (
+    SELECT joueur_id,
+           SUM(montant) AS depense_totale
+    FROM achat
+    GROUP BY joueur_id
+),
+gros_acheteurs AS (
+    SELECT joueur_id, depense_totale
+    FROM depense_par_joueur
+    WHERE depense_totale > (SELECT AVG(depense_totale) FROM depense_par_joueur)
+),
+duree_par_joueur AS (
+    SELECT joueur_id,
+           ROUND(AVG(duree_secondes) / 60.0, 1) AS duree_moyenne_minutes,
+           COUNT(*) AS nb_parties
+    FROM jeux
+    GROUP BY joueur_id
+)
+SELECT j.nom,
+       g.depense_totale,
+       d.duree_moyenne_minutes,
+       d.nb_parties
+FROM gros_acheteurs AS g
+JOIN joueur AS j ON j.id = g.joueur_id
+JOIN duree_par_joueur AS d ON d.joueur_id = g.joueur_id
+ORDER BY d.duree_moyenne_minutes DESC;
+
+
+-- ---------------------------------------------------------
+-- Q10 : Quelle est l'arborescence complète des catégories de niveau, avec
+--       le niveau de profondeur et le chemin depuis la racine ?
+-- Fonction : WITH RECURSIVE
+-- Principe : la partie « ancrage » prend les catégories sans parent (les
+--            racines, niveau 1). La partie récursive joint la table à elle-même
+--            pour trouver les enfants des lignes déjà trouvées, en ajoutant 1 au
+--            niveau et le nom de l'enfant au chemin. Elle s'arrête quand il
+--            n'y a plus d'enfant à trouver.
+-- ---------------------------------------------------------
+WITH RECURSIVE arbre AS (
+    SELECT id,
+           nom,
+           parent_id,
+           1 AS niveau,
+           nom::text AS chemin
+    FROM categorie_niveau
+    WHERE parent_id IS NULL
+
+    UNION ALL
+
+    SELECT c.id,
+           c.nom,
+           c.parent_id,
+           a.niveau + 1,
+           a.chemin || ' > ' || c.nom
+    FROM categorie_niveau AS c
+    JOIN arbre AS a ON c.parent_id = a.id
+)
+SELECT niveau,
+       REPEAT('    ', niveau - 1) || nom AS categorie,
+       chemin
+FROM arbre
+ORDER BY chemin;
+
+
+-- ---------------------------------------------------------
+-- Q11 : Combien de participations et quel score total chaque catégorie racine
+--       rassemble-t-elle, sous-catégories comprises ?
+-- Fonction : WITH RECURSIVE (total d'une branche)
+-- Principe : on part de chaque racine et on descend dans l'arbre en gardant la
+--            racine d'origine. Chaque catégorie sait ainsi à quelle branche elle
+--            appartient. On additionne ensuite les participations (table jeux)
+--            des parties rattachées à toute la branche.
+-- ---------------------------------------------------------
+WITH RECURSIVE branche AS (
+    SELECT id,
+           id AS racine_id,
+           nom AS racine_nom
+    FROM categorie_niveau
+    WHERE parent_id IS NULL
+
+    UNION ALL
+
+    SELECT c.id,
+           b.racine_id,
+           b.racine_nom
+    FROM categorie_niveau AS c
+    JOIN branche AS b ON c.parent_id = b.id
+)
+SELECT b.racine_nom AS categorie_racine,
+       COUNT(DISTINCT b.id) AS nb_categories_dans_la_branche,
+       COUNT(e.id) AS nb_participations,
+       COALESCE(SUM(e.score), 0) AS score_total
+FROM branche AS b
+LEFT JOIN partie AS p ON p.categorie_id = b.id
+LEFT JOIN jeux AS e ON e.partie_id = p.id
+GROUP BY b.racine_id, b.racine_nom
+ORDER BY nb_participations DESC;
+
+
+-- ---------------------------------------------------------
+-- Q12 : Quels sont les jours sans aucun achat entre le 1er juillet et le
+--       30 septembre 2026 ?
+-- Fonction : generate_series + LEFT JOIN
+-- Principe : generate_series fabrique une ligne par jour de la période, même
+--            les jours où rien ne s'est passé. Le LEFT JOIN garde tous ces
+--            jours et met NULL côté achat quand il n'y en a aucun. Le WHERE
+--            ne garde alors que les jours sans achat.
+-- ---------------------------------------------------------
+SELECT jour::date AS jour_sans_achat
+FROM generate_series(DATE '2026-07-01', DATE '2026-09-30', INTERVAL '1 day') AS jour
+LEFT JOIN achat AS a ON a.date_achat::date = jour::date
+WHERE a.id IS NULL
+ORDER BY jour;

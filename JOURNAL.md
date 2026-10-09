@@ -23,7 +23,11 @@ Thème : jeu en ligne (joueurs, parties, participations, achats).
 | Q5 : part du CA par skin (`SUM OVER ()`) | Le skin Fantome rapporte le plus (30,5 % du CA) et le skin Dragon le moins (18,1 %), mais les écarts restent modérés. |
 | Q6 : moyenne mobile 7 jours (`ROWS BETWEEN`) | Le score moyen reste entre 2 000 et 2 800 jusqu'à mi-septembre, puis monte au-dessus de 3 000 en fin de mois. |
 | Q7 : écart à la moyenne du rang (`AVG OVER PARTITION BY`) | joueur_4 est le plus au-dessus de son rang Argent (+559) et joueur_2 le plus en dessous de son rang Diamant (-552), donc le rang affiché ne reflète pas toujours le niveau réel de jeu. |
-
+| Q8 : joueurs au-dessus de la moyenne (2 CTE) | 5 joueurs sur 20 dépassent la moyenne de 48 890 points ; joueur_3 est en tête avec 60 018 points. |
+| Q9 : gros acheteurs et durée de jeu (3 CTE) | Dépenser plus ne veut pas dire jouer plus longtemps : joueur_4 dépense 38 € et joue 37,7 min par partie en moyenne, joueur_8 dépense 46 € mais joue seulement 28,3 min. |
+| Q10 : arbre des catégories (`WITH RECURSIVE`) | Les 15 catégories forment 3 branches (Debutant, Intermediaire, Expert) de 5 éléments chacune. |
+| Q11 : total par branche (`WITH RECURSIVE`) | Les branches Intermediaire (53 participations) et Expert (52) pèsent presque autant, Debutant (45) un peu moins. |
+| Q12 : jours sans achat (`generate_series` + `LEFT JOIN`) | 62 jours sur 92 n'ont aucun achat, car les achats ne se produisent que tous les 2 jours en juillet-août, puis plus du tout en septembre. |
 ## Difficultés rencontrées
 
 *(à compléter par le groupe : une difficulté réelle, comment vous l'avez résolue, ce que vous referiez autrement)*
