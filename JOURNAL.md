@@ -46,4 +46,11 @@ Thème : jeu en ligne (joueurs, parties, participations, achats).
 
 ## Difficultés rencontrées
 
-Le schéma et les requêtes n'étaient pas synchronisés : la colonne s'appelait `rank` dans le schéma mais `rang` dans les requêtes, et la table `amitie` n'existait pas. En rechargeant la base depuis zéro (`schema.sql` puis `seed.sql`) et en lançant toutes les requêtes, nous avons trouvé les erreurs. Nous avons aussi vu que seuls 8 joueurs sur 20 avaient des participations, ce qui rendait les classements pauvres : nous avons corrigé la génération des données. Nous referions un test complet de rechargement à chaque modification.
+Notre vraie difficulté a été de prendre en main PostgreSQL et de trouver ce qui ne fonctionnait pas.
+
+- **Le terminal** : la commande `psql` n'était pas reconnue sous PowerShell. PostgreSQL était bien installé, mais son dossier `bin` n'était pas dans le PATH. Nous l'avons retrouvé dans `C:\Program Files\PostgreSQL\18\bin` et ajouté pour la session avec `$env:Path`.
+- **La base à recharger** : après une première tentative, `createdb` répondait que la base existait déjà, donc les anciennes tables restaient et les nouvelles erreurs étaient mélangées (colonne `rang` introuvable, doublons). Nous avons compris qu'il faut faire `dropdb` puis `createdb` avant chaque rechargement.
+- **Les erreurs dans le code** : le schéma et les requêtes n'étaient pas d'accord (colonne `rank` contre `rang`, table `amitie` absente). Nous avons trouvé le problème en rechargeant tout depuis zéro et en lisant les messages d'erreur.
+- **Les données** : seuls 8 joueurs sur 20 avaient des participations, ce qui rendait les classements pauvres. Nous avons corrigé la génération avec `generate_series`.
+
+Ce que nous referions autrement : tester le rechargement complet (`dropdb`, `createdb`, `schema.sql`, `seed.sql`, `requetes.sql`) dès le début et après chaque modification, au lieu d'attendre la fin.
