@@ -44,6 +44,13 @@ Thème : jeu en ligne (joueurs, parties, participations, achats).
 
 **Moyenne contre médiane** : les durées sont tirées uniformément entre 1 et 60 minutes, donc la distribution est symétrique et la moyenne (31,1 min) représente aussi bien nos données que la médiane (31,0 min). Avec des durées très asymétriques (beaucoup de parties courtes, quelques très longues), la médiane serait plus fiable, car la moyenne serait tirée vers le haut par les parties longues.
 
+## Palier 5: ce que chaque requête nous apprend
+
+| Requête | Ce qu'elle apprend sur nos données |
+|---|---|
+| Q17 : Calcul du coût avec `EXPLAIN ANALYZE` | Pour le tableau de 20 joueurs et sur l'exécution de l'exercice en Q1, en exécutant `EXPLAIN ANALYZE` sur Q1, on a un coût de 35. Ensuite, en créant un index avec `CREATE INDEX` sur `Joueur(score, niveaux)` et en ré-exécutant `EXPLAIN ANALYZE` sur Q1, le coût tombe à 7. Sachant que cet échantillon est faible (20 joueurs), il y a déjà un énorme gain de coût, ce qui est indispensable pour de grosses données pour utiliser moins d'énergie et donc faire baisser la facture et celà rend aussi l'exécution de la recherche plus rapide. Cependant, cela prend de l'espace sur le disque et prend plus de temps pour exécuter des commandes qui modifient la table (comme `DELETE` ou `INSERT`). |
+| Q18 : Raccourci avec `CREATE VIEW` | Au lieu de devoir copier-coller toute une longue instruction SQL qui fait plus de 10 lignes par exemple, il n'y a qu'une seule ligne à insérer `SELECT * FROM (nom_du_view)`. De plus, on peut rajouter d'autres instructions facilement. |
+
 ## Difficultés rencontrées
 
 Notre vraie difficulté a été de prendre en main PostgreSQL et de trouver ce qui ne fonctionnait pas.

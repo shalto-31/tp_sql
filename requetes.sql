@@ -283,6 +283,8 @@ FROM jeux;
 
 -- Q16 : Tableau de bord direction : par mois, activité de jeu, chiffre d'affaires et évolution du CA
 -- Fonction : CTE + SUM() OVER + LAG()
+-- + bonus crée une view donc un shortcut pour utiliser cette commande sql
+CREATE VIEW shortcut AS
 WITH activite AS (
     SELECT date_trunc('month', date_partie)::date AS mois,
            COUNT(*) AS nb_participations,
@@ -308,3 +310,23 @@ SELECT a.mois,
 FROM activite AS a
 LEFT JOIN ventes AS v ON v.mois = a.mois
 ORDER BY a.mois;
+
+-- Q17 BONUS explain analyze
+-- à la première exécution le cost vaut 35, sur la deuxième exécution elle vaut 7 (Il n'y a que 20 joueurs)
+EXPLAIN ANALYZE
+SELECT j.rang,
+       j.nom,
+       SUM(e.score) AS score_total,
+       RANK() OVER (PARTITION BY j.rang ORDER BY SUM(e.score) DESC) AS place_dans_le_rang
+FROM joueur AS j
+JOIN jeux AS e ON e.joueur_id = j.id
+GROUP BY j.id, j.rang, j.nom
+ORDER BY CASE j.rang WHEN 'Bronze' THEN 1 WHEN 'Argent' THEN 2
+                     WHEN 'Or' THEN 3 ELSE 4 END,
+         place_dans_le_rang;
+
+CREATE INDEX idx_score_lv ON joueur(rang, niveaux);
+
+-- Q 18 BONUS CREATE VIEW
+-- exécute Q16 en 1 ligne
+SELECT * FROM shortcut;

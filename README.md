@@ -25,7 +25,12 @@ partie (id PK, categorie_id FK, nb_joueur, mode_de_jeux, created_at)
 categorie_niveau (id PK, nom, parent_id FK -> categorie_niveau.id)   <- table hiérarchique
 ```
 
-- `jeux` est la table d'événements : 150 participations du 01/07 au 30/09/2026 (score et durée).
+- `joueur` est la table principale : contient les profils utilisateurs (nom unique, skin, niveaux et rang).
+   - `amitie` est la table d'association : une table `amitie` (joueur_id, ami_id) remplace l'ancienne colonne texte `amis`, car un joueur peut avoir plusieurs amis.
+   - `achat` est la table des transactions : 30 achats, un tous les 3 jours du 04/07 au 29/09, pour couvrir les trois mois.
+   - `jeux` est la table d'événements : 150 participations du 01/07 au 30/09/2026 (score et durée).
+
+- `partie` est la table des sessions de jeu : 20 parties enregistrées avec au maximum 10 joueurs (modes solo, duo ou équipe), avec une partie générée par jour.
 - `categorie_niveau` est la table hiérarchique : 3 catégories racines (Debutant, Intermediaire, Expert) avec 4 sous-niveaux chacune.
 
 ## Volumes
@@ -54,3 +59,4 @@ categorie_niveau (id PK, nom, parent_id FK -> categorie_niveau.id)   <- table hi
 | 2 | Q1 à Q7 | `RANK`, `ROW_NUMBER` + CTE, `SUM OVER`, `LAG`, part du total, `ROWS BETWEEN`, `AVG OVER PARTITION BY` |
 | 3 | Q8 à Q12 | CTE enchaînées, `WITH RECURSIVE` (arbre et total par branche), `generate_series` + `LEFT JOIN` |
 | 4 | Q13 à Q16 | `FILTER`, `ROLLUP` + `GROUPING`, `percentile_cont`, tableau de bord |
+| 5 (Bonus) | Q 17 et Q18 | optimisation du coût et raccourci`EXPLAIN ANALYZE` + `CREATE VIEW`|
