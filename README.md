@@ -13,6 +13,8 @@ psql -d jeu_en_ligne -f requetes.sql
 
 ## Schéma
 
+![image failed to load, please check you network connection.](image.png)
+
 ```text
 joueur (id PK, nom UNIQUE, skin, niveaux, rang)
    |
